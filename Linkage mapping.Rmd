@@ -1,0 +1,92 @@
+Your Name:
+___________________
+Today's Date:
+___________________
+
+This R Markdown file will help you create a report that maps genetic linkage for the factors studied in your experiment. It is designed to come sequentially after using makePlots.Rmd. You can delete these instructions before printing out the finished document. Here is what you need to do:
+
+1. Run transformPhenotypes.Rmd on your experimental data, following the instructions given there. Open up the generated report and decide which transformation (or lack thereof) makes your data look the best/most normal. Check the workspace box in the upper right hand corner to see if there is a file called "pheno.df" under the Data section.
+
+2. Enter your preferred transformation into the grey section below, on the right side of "yourTransformation<-". Use this following list of choices: enter 5 for no transformation, 6 for log transform, 7 for square root transform, 8 for inverse transform, and 9 for arcsine transfrom.
+
+3. To the right of "yourPhenoTransforms.df<-", type in the name of the dataframe you generated in Report 1, without quotes.
+
+4. To the right of "cimPermutations<-", type in either TRUE or FALSE, without quotes. If you enter TRUE, the report will perform permutation tests on the cim mapping to determine the significance threshold. Please note that this will add about 5 minutes to the generation time of the report.
+
+5. Go to File->Save As and change the name of this file, then save it where you'll need it. THIS IS IMPORTANT. Otherwise, the original template will be overwritten.
+
+6. Go to the lower right hand window, click the "Packages" tab, then find and make sure the box next to "knitr" is checked.
+
+7. In the line below, change the text in quotes to the location that you saved this file (Ex. "/Users/Stephen/Dropbox/Coding/ForStephen/Report 2/Linkage mapping.Rmd"). You will also need to specify where the HTML output file will go, such as "/Users/Stephen/Dropbox/Coding/ForStephen/Report 2/figure/Linkage mapping.html". Next, copy and paste the revised line to the console window and hit enter. Your HTML report will be generated where you specified. Please note: this report is more computationally intensive to generate than 
+transformPhenotypes.Rmd. It might take a couple minutes to finish.
+
+**Info for step 7 goes below**
+
+ knit2html("~/Dropbox/Coding/Active Projects/Report 2/Linkage mapping.Rmd", output = "~/Dropbox/Coding/Active Projects/Report 2/figure/LinkageMapping.hmtl")
+
+```{r, echo=TRUE, warning=FALSE}
+#Step 2 info goes below:
+yourTransformation<-5
+#Step 3 info goes below:
+yourPhenoTransforms.df<-pheno.df
+#Step 4 info goes below:
+cimPermutations<-FALSE
+source("~/Dropbox/Coding/Active Projects/Report 2/linkageMappingFunctions.R")
+```
+
+Everything below this line doesn't need to be edited.
+
+---------------------------------------------------------------------------
+
+Files needed for the report to work properly: 
+
+  This report relies on several pieces of data to work properly. N2xCB4856.cross contatins the genetic map, which was read in from /Report 2/N2xCB4856_RIAILs_Rqtlfiles.RData. A csv containing genomic positions and marker names for the genetic map, genomic.pos, was read in from /Report 2/SNPgenomicpositions.csv. If the genomic positions need to be updated, the marker names can be matched on WormBase and the old genomic positions replaced. The phenotype csv, which was provided by the user and made into a data.frame of several common statistical transformations in Report 1, is used to calculate LOD scores across the genome for the given trait.
+  
+  
+A brief description of the functions used in the report:
+
+  The report relies on standard functions found in the r/qtl package and adapts code from Josh Bloom and Erik Andersen. First, the phenotype transformation data.frame was merged with the generalized cross object framework, N2xCB4856.cross. The merged cross object was run through scanone twice to obtain LOD scores, once using a normal model and once using a nonparametric model. 1000 scanone permutation tests were then performed for both models. The 95th quantile was taken to be the LOD score significance threshold. The max LOD score for each chromosome was found, filtered by whether they were above the significance threshold. Using these discovered peaks, the program formed a linear model using the phenotypes and genotypes at the peak positions and replaced the phenotypes with the residuals of this linear model. This regressed out the discovered peaks. The program then merged the new phenotypes to the cross object framework, performed a scanone, and obtained new max LOD scores for each chromosome, again filtered by the significance threshold. This cycle was continued until no peaks were found above the significance threshold.
+  Taking all the discovered peaks, the program then ran the peak positions through fitqtl and refineqtl to obtain VE effects and confidence intervals. The marker names were matched to the genomic.pos data frame to obtain genomic positions of the QTLs. The plots seen below were then created using ggplot2 and the peak information.
+  
+  
+
+```{r, warning=FALSE}
+print(normalQTL.model)
+# In the following plot, red stars indicate QTLs, the black dotted line is the LOD score significance cutoff, the red dashed lines are
+# the confidence intervals, and the numbers above each peak are the VE. The black solid line is the LOD score, based on genomic pos.
+# Please note that due to the effects of regression, some peaks will appear to be below the significance cutoff, even though they rise
+# above this threshold when the larger peaks are regressed out. The pheno.col of the scanone was determined by the user, based on which
+# transformation best fit a normal model.
+print(normalQTL.plot)
+# For each QTL discovered, this plot shows phenotypic distribution, separated by strain. The points show the actual phenotypes, while
+# the boxplot shows 25th, 50th and 75th quantiles.
+print(normalQTL.RIAIL.distro)
+# This plot shows the VE explained for phenotypic variance across the genome, based on genetic, NOT genomic position. Vertical dashed 
+# red lines show the genetic position of the QTLs for comparison against the VE peaks. Because the effectscan function used to generate
+# this plot assumes a normal model, it is not used with nonparametric data.
+print(normalQTL.effects)
+
+```
+
+```{r, warning=FALSE}
+print(npQTL.model)
+# Same as the normal QTL LOD score plot, red stars are QTLs, red dashed lines are CIs, black dashed line is cutoff, black solid line is
+# LOD score. One key difference: pheno.col used in the scanone of this plot was automatically set to be 5, or no transformation of 
+# phenotypes. This is because nonparametric mapping does not assume a normal model.
+print(npQTL.plot)
+# Same as normal plot
+print(normalQTL.RIAIL.distro)
+
+```
+
+```{r, warning=FALSE}
+# Because cim artificially imputes marker information based on existing information, we did not attempt to find QTLs for the cim 
+# mapping. Instead, we show only the generated LOD scores across the genome. If cimPermutations is specified as TRUE by the user,
+# a black dashed line will be drawn to indicate the significance threshold based on 1000 permutation tests.
+print(cim.plot)
+# This plot combines the cim, np and normal mappings to give an idea of how closely these different mappings agree with each other.
+print(overlaid.plots)
+
+```
+
+
