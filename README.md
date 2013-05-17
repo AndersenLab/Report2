@@ -1,4 +1,4 @@
 Report2
 =======
 
-for Andersen lab - linkage mapping
+Andersen lab - linkage mapping
